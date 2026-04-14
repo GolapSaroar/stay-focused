@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOCUS — Your Mind, Reclaimed</title>
+<!-- Load fonts non-blocking so extension never hangs waiting for network -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"></noscript>
+<style>
+  /* Fallback fonts so UI works even if Google Fonts is blocked */
+  body { font-family: 'Syne', 'Segoe UI', system-ui, sans-serif; }
+  .live-time, .greeting, .tagline, .timer-label, .timer-mode .mode-btn,
+  .card-title, .goal-text, .add-goal, .mood-label, .dis-empty-msg,
+  .dis-tag, .quote-author, .footer-text, .reset-btn, .export-btn,
+  #breatheLabel, .breathe-info .breathe-sub, .stat-label, .block-sub,
+  .int-area, .goal-input { font-family: 'DM Mono', 'Courier New', monospace; }
+</style>
+<style>
+  :root {
+    --bg: #080a0f;
+    --bg2: #0d1017;
+    --surface: #111620;
+    --surface2: #161c2a;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.15);
+
+    /* Vivid accent palette */
+    --accent: #36f5a8;       /* bright mint green */
+    --accent-dim: #1db87a;
+    --blue: #58b4ff;         /* sky blue */
+    --coral: #ff6e6e;        /* soft coral red */
+    --amber: #ffbb45;        /* warm amber */
+    --lavender: #c4b0ff;     /* soft lavender */
+
+    /* Text — clear and comfortable */
+    --text:    #edeef5;      /* warm near-white */
+    --text2:   #b0bcd6;      /* readable muted blue-grey */
+    --text3:   #7a8aaa;      /* secondary labels */
+    --muted:   #4a5470;
+    --muted2:  #252e42;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grain */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1000; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+  }
+
+  /* blobs */
+  .blob { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+  .blob-1 { width: 600px; height: 600px; background: #36f5a8; opacity: 0.07; top: -200px; right: -100px; animation: blobFloat 14s ease-in-out infinite; }
+  .blob-2 { width: 450px; height: 450px; background: #58b4ff; opacity: 0.07; bottom: -100px; left: -100px; animation: blobFloat 18s ease-in-out infinite reverse; }
+  .blob-3 { width: 350px; height: 350px; background: #ffbb45; opacity: 0.05; top: 50%; left: 38%; animation: blobFloat 11s ease-in-out infinite 3s; }
+  @keyframes blobFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-20px) scale(1.05); }
+    66% { transform: translate(-20px,12px) scale(0.96); }
+  }
+
+  .container {
+    position: relative; z-index: 10;
+    max-width: 1200px; margin: 0 auto;
+    padding: 40px 32px;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 40px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    animation: fadeSlideDown 0.8s ease both;
+  }
+  .logo { font-size: 13px; font-weight: 700; letter-spacing: 0.3em; color: var(--text3); text-transform: uppercase; }
+  .logo span { color: var(--accent); }
+  .live-time { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text3); letter-spacing: 0.1em; }
+
+  /* ── HERO ── */
+  .hero {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start;
+    animation: fadeSlideUp 0.9s ease 0.1s both;
+  }
+
+  .greeting {
+    font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.2em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .greeting::before { content: ''; width: 20px; height: 1px; background: var(--accent); }
+
+  h1 { font-size: clamp(36px, 5vw, 62px); font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 18px; }
+  h1 .line2 { display: block; color: var(--text3); font-weight: 400; font-size: 0.7em; }
+
+  .tagline {
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    color: #d4a840;
+    line-height: 1.9; max-width: 380px; margin-bottom: 32px;
+  }
+
+  /* stats */
+  .stats-row { display: flex; gap: 24px; margin-bottom: 32px; }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-val { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-val.green  { color: var(--accent); }
+  .stat-val.blue   { color: var(--blue); }
+  .stat-val.red    { color: var(--coral); }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; color: var(--text3); text-transform: uppercase; }
+  .stat-divider { width: 1px; background: var(--border); }
+
+  /* ── TIMER CARD ── */
+  .timer-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 32px;
+    position: relative; overflow: hidden;
+  }
+  .timer-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.55;
+  }
+
+  .timer-label { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #c49030; text-transform: uppercase; margin-bottom: 20px; }
+
+  .timer-display {
+    font-family: 'DM Mono', monospace; font-size: clamp(48px, 6vw, 72px); font-weight: 400;
+    letter-spacing: -0.02em; color: var(--text); margin-bottom: 24px; font-variant-numeric: tabular-nums; transition: color 0.3s;
+  }
+  .timer-display.running   { color: var(--accent); text-shadow: 0 0 24px rgba(54,245,168,0.35); }
+  .timer-display.break-time { color: var(--blue);  text-shadow: 0 0 24px rgba(88,180,255,0.35); }
+
+  .timer-mode { display: flex; gap: 8px; margin-bottom: 20px; }
+  .mode-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border2);
+    background: transparent; color: var(--text2); cursor: pointer; transition: all 0.2s;
+  }
+  .mode-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 700; }
+  .mode-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+  .timer-controls { display: flex; gap: 12px; align-items: center; }
+  .btn-main {
+    flex: 1; padding: 14px 24px; border-radius: 12px; border: none;
+    background: var(--accent); color: var(--bg); font-family: 'Syne', sans-serif;
+    font-size: 15px; font-weight: 700; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  }
+  .btn-main:hover { background: #4dffb5; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(54,245,168,0.28); }
+  .btn-main.running { background: var(--coral); }
+  .btn-main.running:hover { background: #ff5252; box-shadow: 0 8px 24px rgba(255,110,110,0.28); }
+
+  .btn-icon {
+    width: 46px; height: 46px; border-radius: 12px; border: 1px solid var(--border2);
+    background: transparent; color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;
+  }
+  .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ring */
+  .timer-ring-wrap { position: absolute; top: 20px; right: 20px; width: 60px; height: 60px; }
+  .timer-ring { width: 60px; height: 60px; transform: rotate(-90deg); }
+  .ring-bg   { fill: none; stroke: var(--surface2); stroke-width: 3; }
+  .ring-fill { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+
+  /* progress bar */
+  .progress-bar-wrap { background: var(--muted2); border-radius: 4px; height: 4px; overflow: hidden; margin-top: 12px; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--blue)); border-radius: 4px; transition: width 1s ease; }
+
+  /* session dots */
+  .sessions-dots { display: flex; gap: 6px; margin-top: 12px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted2); transition: all 0.3s; }
+  .dot.done { background: var(--accent); box-shadow: 0 0 6px rgba(54,245,168,0.6); }
+
+  /* ── MAIN GRID ── */
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+    animation: fadeSlideUp 1s ease 0.2s both;
+  }
+
+  /* card base */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+    position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s;
+  }
+  .card:hover { transform: translateY(-3px); }
+
+  /* Each card has a glowing top border line */
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; border-radius: 1px;
+    opacity: 0.7; transition: opacity 0.3s;
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* Goals card */
+  .card.card-goals {
+    background: linear-gradient(145deg, #0e1c14 0%, #0a1410 60%, #0d1a14 100%);
+    border-color: rgba(54,245,168,0.18);
+  }
+  .card.card-goals::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+  .card.card-goals:hover { border-color: rgba(54,245,168,0.4); }
+
+  /* Mood card */
+  .card.card-mood {
+    background: linear-gradient(145deg, #1a160a 0%, #130f08 60%, #18140a 100%);
+    border-color: rgba(255,187,69,0.18);
+  }
+  .card.card-mood::before { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+  .card.card-mood:hover { border-color: rgba(255,187,69,0.4); }
+
+  /* Distraction card */
+  .card.card-distraction {
+    background: linear-gradient(145deg, #1a0e0e 0%, #130a0a 60%, #180d0d 100%);
+    border-color: rgba(255,110,110,0.18);
+  }
+  .card.card-distraction::before { background: linear-gradient(90deg, transparent, var(--coral), transparent); }
+  .card.card-distraction:hover { border-color: rgba(255,110,110,0.4); }
+
+  /* Intention card */
+  .card.card-intention {
+    background: linear-gradient(145deg, #0a1a1e 0%, #081418 55%, #0c1a1e 100%);
+    border-color: rgba(0,212,180,0.18);
+    box-shadow: inset 0 0 40px rgba(0,212,180,0.03);
+  }
+  .card.card-intention::before { background: linear-gradient(90deg, transparent, #00d4b4, #00aaaa, transparent); }
+  .card.card-intention:hover { border-color: rgba(0,212,180,0.42); box-shadow: inset 0 0 50px rgba(0,212,180,0.06); }
+
+  .card-title {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.22em; color: var(--text3);
+    text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .dot-ind { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-ind.green  { background: var(--accent); }
+  .dot-ind.blue   { background: var(--blue); }
+  .dot-ind.red    { background: var(--coral); }
+  .dot-ind.amber  { background: var(--amber); }
+  .dot-ind.lav    { background: var(--lavender); }
+  .dot-ind.teal-pip { background: #00d4b4; }
+
+  /* ── QUOTE CARD ── (highlighted treatment) */
+  .quote-card {
+    background: linear-gradient(145deg, #0e1628 0%, #0b1220 60%, #0e1528 100%);
+    border: 1px solid rgba(88,180,255,0.2);
+    border-radius: 16px; padding: 28px;
+    position: relative; overflow: hidden;
+  }
+  .card.card-quote:hover { border-color: rgba(88,180,255,0.42); }
+  .quote-card::before {
+    background: linear-gradient(90deg, transparent, var(--blue), var(--lavender), transparent) !important;
+    opacity: 0.85 !important; left: 10% !important; right: 10% !important;
+  }
+  /* big decorative quote mark */
+  .quote-card::after {
+    content: '"';
+    font-family: 'Syne', sans-serif; font-size: 140px; font-weight: 800;
+    color: var(--blue); opacity: 0.09;
+    position: absolute; top: -16px; left: 12px; line-height: 1; pointer-events: none;
+  }
+  .quote-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 600; font-style: normal;
+    line-height: 1.6; letter-spacing: -0.01em;
+    color: var(--text);   /* bright white — eye-catching */
+    margin-bottom: 18px; position: relative;
+  }
+  .quote-author {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em;
+    color: var(--blue);   /* colored, not grey */
+    text-transform: uppercase;
+  }
+  .next-quote {
+    position: absolute; bottom: 16px; right: 16px;
+    background: rgba(88,180,255,0.1); border: 1px solid rgba(88,180,255,0.3);
+    border-radius: 8px; padding: 6px 12px; color: var(--blue);
+    font-family: 'DM Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .next-quote:hover { background: rgba(88,180,255,0.2); border-color: var(--blue); }
+
+  /* ── GOAL CARD ── */
+  .goal-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; cursor: pointer; }
+  .goal-check {
+    width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--muted2);
+    flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: transparent; transition: all 0.2s;
+  }
+  .goal-item.done .goal-check { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .goal-text { font-size: 13px; color: #f0c060; line-height: 1.5; transition: color 0.2s; }
+  .goal-item.done .goal-text { color: var(--muted); text-decoration: line-through; }
+
+  .add-goal {
+    width: 100%; background: transparent; border: 1px dashed var(--muted); border-radius: 8px;
+    padding: 8px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text3);
+    cursor: pointer; text-align: left; transition: all 0.2s; margin-top: 4px; color: #c49030;
+  }
+  .add-goal:hover { border-color: var(--accent); color: var(--accent); }
+  .goal-input-wrap { display: none; margin-top: 8px; }
+  .goal-input-wrap.show { display: flex; gap: 8px; }
+  .goal-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 8px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none;
+  }
+  .goal-input:focus { border-color: var(--accent); }
+  .goal-add-btn { padding: 8px 14px; background: var(--accent); border: none; border-radius: 8px; color: var(--bg); font-size: 14px; cursor: pointer; font-weight: 700; }
+
+  /* ── MOOD ── */
+  .mood-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+  .mood-btn {
+    aspect-ratio: 1; border-radius: 10px; border: 1.5px solid var(--border2);
+    background: var(--surface2); font-size: 22px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mood-btn:hover, .mood-btn.selected { border-color: var(--amber); transform: scale(1.1); background: rgba(255,187,69,0.09); }
+  .mood-label { font-family: 'DM Mono', monospace; font-size: 11px; color: #e8b84a; text-align: center; min-height: 14px; }
+
+  /* ── BREATHE ── */
+  .breathe-card {
+    background: linear-gradient(135deg, #0d1820, #0a1218);
+    border: 1px solid rgba(54,245,168,0.2); border-radius: 16px; padding: 24px;
+    display: flex; align-items: center; gap: 22px;
+  }
+  .breathe-ring {
+    width: 92px; height: 92px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+    background: radial-gradient(circle at 40% 40%, rgba(54,245,168,0.1), rgba(54,245,168,0.02));
+    border: 1.5px solid rgba(54,245,168,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent);
+    letter-spacing: 0.04em; text-align: center;
+    position: relative;
+    box-shadow: inset 0 0 16px rgba(54,245,168,0.05);
+    transition: border-color 0.4s;
+  }
+  .breathe-ring::before {
+    content: ''; position: absolute; inset: 8px; border-radius: 50%;
+    border: 1px dashed rgba(54,245,168,0.15);
+    transition: border-color 0.4s;
+    pointer-events: none;
+  }
+  .breathe-ring:hover {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 16px rgba(54,245,168,0.08), 0 0 22px rgba(54,245,168,0.15);
+  }
+  #breatheLabel {
+    position: relative; z-index: 1;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    line-height: 1.4; font-size: 10px; letter-spacing: 0.06em;
+  }
+  #breatheLabel.fade-out { opacity: 0; transform: scale(0.75); }
+
+  /* 12s cycle: 4s inhale, 2s hold, 4s exhale, 2s hold */
+  @keyframes breatheSync {
+    0%   { transform: scale(1);    box-shadow: inset 0 0 10px rgba(54,245,168,0.04), 0 0 0px   rgba(54,245,168,0);    }
+    33%  { transform: scale(1.3);  box-shadow: inset 0 0 28px rgba(54,245,168,0.22), 0 0 40px  rgba(54,245,168,0.3);  }
+    50%  { transform: scale(1.3);  box-shadow: inset 0 0 28px rgba(54,245,168,0.22), 0 0 40px  rgba(54,245,168,0.3);  }
+    83%  { transform: scale(1);    box-shadow: inset 0 0 10px rgba(54,245,168,0.04), 0 0 0px   rgba(54,245,168,0);    }
+    100% { transform: scale(1);    box-shadow: inset 0 0 10px rgba(54,245,168,0.04), 0 0 0px   rgba(54,245,168,0);    }
+  }
+  .breathe-ring.breathing {
+    border-color: var(--accent);
+    animation: breatheSync 12s ease-in-out infinite;
+  }
+  .breathe-ring.breathing::before { border-color: rgba(54,245,168,0.3); }
+  .breathe-info .breathe-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+  .breathe-info .breathe-sub  { font-family: 'DM Mono', monospace; font-size: 11px; color: #d4a840; line-height: 1.75; }
+
+  /* ── DISTRACTION LOG ── */
+  .distraction-list { display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; margin-bottom: 10px; }
+  .distraction-list::-webkit-scrollbar { width: 3px; }
+  .distraction-list::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+  .distraction-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; background: rgba(255,110,110,0.06);
+    border: 1px solid rgba(255,110,110,0.15); border-radius: 8px;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+  }
+  .dis-name { color: #e0b84a; }
+  .dis-count { padding: 2px 8px; background: rgba(255,110,110,0.15); color: var(--coral); border-radius: 10px; }
+  .dis-empty-msg { font-family: 'DM Mono', monospace; font-size: 12px; color: #c49030; padding: 6px 0; line-height: 1.7; }
+  .dis-btn { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .dis-tag {
+    padding: 6px 12px; border: 1px solid var(--border2); border-radius: 8px;
+    background: transparent; color: #d4a840; font-family: 'DM Mono', monospace; font-size: 11px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .dis-tag:hover { border-color: var(--coral); color: var(--coral); background: rgba(255,110,110,0.07); }
+
+  /* ── INTENTION ── */
+  .int-area {
+    width: 100%; background: transparent; border: 1px solid var(--border2); border-radius: 10px;
+    padding: 12px 14px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text);
+    resize: none; outline: none; line-height: 1.8; min-height: 105px; transition: border-color 0.25s;
+  }
+  .int-area::placeholder { color: #c49030; }
+  .int-area:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(54,245,168,0.06); }
+
+  /* ── BLOCK BANNER ── */
+  .block-banner {
+    background: linear-gradient(135deg, #0e1a28, #0a1320);
+    border: 1px solid rgba(255,187,69,0.2); border-left: 3px solid var(--amber);
+    border-radius: 16px; padding: 18px 24px;
+    display: flex; align-items: center; gap: 16px;
+    animation: fadeSlideUp 1s ease 0.15s both;
+    grid-column: 1 / -1;
+  }
+  .block-icon { font-size: 20px; flex-shrink: 0; }
+  .block-text { flex: 1; }
+  .affirmation-text {
+    font-size: 16px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.01em; margin-bottom: 4px;
+  }
+  .block-sub { font-family: 'DM Mono', monospace; font-size: 11px; color: #d4a840; line-height: 1.7; }
+  .block-sub strong { color: var(--amber); font-weight: 400; }
+  .btn-next-aff {
+    padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255,187,69,0.35);
+    background: rgba(255,187,69,0.07); color: var(--amber); font-family: 'DM Mono', monospace;
+    font-size: 11px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-next-aff:hover { background: rgba(255,187,69,0.15); border-color: var(--amber); }
+
+  /* ── FOOTER ── */
+  footer {
+    display: flex; justify-content: space-between; align-items: center;
+    animation: fadeSlideUp 1s ease 0.3s both; padding-bottom: 8px;
+  }
+  .footer-text { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); letter-spacing: 0.1em; }
+  .footer-links { display: flex; gap: 16px; }
+
+  /* RESET DAY — prominent */
+  .reset-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+    padding: 7px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    border: 1.5px solid rgba(255,110,110,0.45); background: rgba(255,110,110,0.08);
+    color: var(--coral); text-transform: uppercase;
+  }
+  .reset-btn:hover { background: rgba(255,110,110,0.18); border-color: var(--coral); }
+  .export-btn {
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+    padding: 7px 18px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+    border: 1px solid var(--border2); background: transparent; color: var(--text3); text-transform: uppercase;
+  }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SESSION OVERLAY ── */
+  .session-overlay {
+    position: fixed; inset: 0; z-index: 5000; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .session-overlay.show { opacity: 1; pointer-events: all; }
+  .session-overlay-bg { position: absolute; inset: 0; background: rgba(5,6,10,0.85); backdrop-filter: blur(14px); }
+  .session-popup {
+    position: relative; z-index: 1;
+    background: linear-gradient(135deg, #0f1826, #090e18);
+    border: 1px solid rgba(54,245,168,0.25); border-radius: 28px;
+    padding: 48px 56px; text-align: center; max-width: 460px; width: 90%;
+    box-shadow: 0 0 80px rgba(54,245,168,0.08), 0 40px 80px rgba(0,0,0,0.8);
+    transform: scale(0.9); transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .session-overlay.show .session-popup { transform: scale(1); }
+  .session-popup::before {
+    content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.6;
+  }
+  .pop-icon   { font-size: 52px; margin-bottom: 16px; display: block; }
+  .pop-title  { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800; color: var(--accent); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .pop-title.blue { color: var(--blue); }
+  .pop-sub    { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.15em; color: var(--text2); margin-bottom: 28px; text-transform: uppercase; }
+  .pop-stat   {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(54,245,168,0.08); border: 1px solid rgba(54,245,168,0.2);
+    border-radius: 12px; padding: 12px 28px; margin-bottom: 28px;
+    font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: var(--accent);
+  }
+  .pop-stat.blue { background: rgba(88,180,255,0.08); border-color: rgba(88,180,255,0.2); color: var(--blue); }
+  .pop-close  {
+    display: block; width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--accent), #1db87a); border: none; border-radius: 14px;
+    color: var(--bg); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.25s;
+  }
+  .pop-close:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(54,245,168,0.3); }
+  .pop-close.blue { background: linear-gradient(135deg, var(--blue), #3080cc); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text); padding: 12px 24px; border-radius: 40px;
+    font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.05em;
+    z-index: 2000; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @keyframes fadeSlideDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+  @keyframes fadeSlideUp   { from { opacity:0; transform:translateY(28px);  } to { opacity:1; transform:none; } }
+
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } .main-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .main-grid { grid-template-columns: 1fr; } .container { padding: 24px 18px; } }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- SESSION OVERLAY -->
+<div class="session-overlay" id="sessionOverlay" onclick="closeOverlay()">
+  <div class="session-overlay-bg"></div>
+  <div class="session-popup" onclick="event.stopPropagation()">
+    <span class="pop-icon" id="popIcon">🎯</span>
+    <div class="pop-title" id="popTitle">Session Complete!</div>
+    <div class="pop-sub"  id="popSub">Focus block finished</div>
+    <div class="pop-stat" id="popStat">Session #1</div>
+    <button class="pop-close" id="popClose" onclick="closeOverlay()">Take a break →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <header>
+    <div class="logo"><span>◆</span> Focus Space</div>
+    <div class="live-time" id="liveTime">--:--:-- --</div>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:28px;">
+
+    <!-- HERO -->
+    <div class="hero">
+
+      <!-- LEFT -->
+      <div>
+        <div class="greeting" id="greetingText">Good morning</div>
+        <h1>Your time is<br><span class="line2">too precious to scroll.</span></h1>
+        <p class="tagline">Every minute you spend here is a minute you take back from the feed. Deep work builds the life you want.</p>
+
+        <div class="stats-row">
+          <div class="stat">
+            <div class="stat-val green" id="focusMinStat">0</div>
+            <div class="stat-label">Focus min<br>today</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-val blue" id="sessionsStat">0</div>
+            <div class="stat-label">Sessions<br>done</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <div class="stat-val red" id="distractionsStat">0</div>
+            <div class="stat-label">Urges<br>logged</div>
+          </div>
+        </div>
+
+        <!-- BREATHE -->
+        <div class="breathe-card">
+          <div class="breathe-ring" id="breatheBtn" onclick="toggleBreathe()">
+            <span id="breatheLabel">breathe</span>
+          </div>
+          <div class="breathe-info">
+            <div class="breathe-title">Urge to scroll? Breathe first.</div>
+            <div class="breathe-sub">Tap the ring. One slow breath cycle<br>kills the craving instantly.<br><span class="breathe-phase" id="breathePhase"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMER -->
+      <div class="timer-card">
+        <div class="timer-ring-wrap">
+          <svg class="timer-ring" viewBox="0 0 60 60">
+            <circle class="ring-bg"   cx="30" cy="30" r="26"/>
+            <circle class="ring-fill" id="ringFill" cx="30" cy="30" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/>
+          </svg>
+        </div>
+
+        <div class="timer-label">⏱ Pomodoro Timer</div>
+        <div class="timer-display" id="timerDisplay">25:00</div>
+
+        <div class="timer-mode">
+          <button class="mode-btn active" onclick="setMode(this,25,'focus')">25 min focus</button>
+          <button class="mode-btn" onclick="setMode(this,5,'break')">5 min break</button>
+          <button class="mode-btn" onclick="setMode(this,50,'focus')">50 min deep</button>
+        </div>
+
+        <div class="timer-controls">
+          <button class="btn-main" id="startBtn" onclick="toggleTimer()">START</button>
+          <button class="btn-icon" onclick="resetTimer()" title="Reset">↺</button>
+          <button class="btn-icon" onclick="logDistraction()" title="Log distraction" style="color:var(--coral);border-color:rgba(255,110,110,0.35);">⚡</button>
+        </div>
+
+        <div class="sessions-dots" id="sessionDots">
+          <div class="dot" id="d1"></div>
+          <div class="dot" id="d2"></div>
+          <div class="dot" id="d3"></div>
+          <div class="dot" id="d4"></div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:0.1em;">SESSION PROGRESS</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);" id="progressPct">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFFIRMATION BANNER -->
+    <div class="block-banner">
+      <div class="block-icon">✦</div>
+      <div class="block-text">
+        <div class="affirmation-text" id="affirmationText">You chose presence over performance. That's rare.</div>
+        <div class="block-sub">You opened this tab instead of social media. <strong>That's already a win.</strong> Keep going.</div>
+      </div>
+      <button class="btn-next-aff" onclick="nextAffirmation()">Refresh ↻</button>
+    </div>
+
+    <!-- BOTTOM GRID -->
+    <div class="main-grid">
+
+      <!-- GOALS -->
+      <div class="card card-goals">
+        <div class="card-title"><div class="dot-ind green"></div>Today's Goals
+          <span style="margin-left:auto;color:var(--text2);font-size:10px;" id="goalsProg">0/0</span>
+        </div>
+        <div id="goalList"></div>
+        <button class="add-goal" onclick="showGoalInput()">+ Add a goal</button>
+        <div class="goal-input-wrap" id="goalInputWrap">
+          <input class="goal-input" id="goalInput" placeholder="What will you accomplish?" onkeydown="if(event.key==='Enter')addGoal()">
+          <button class="goal-add-btn" onclick="addGoal()">✓</button>
+        </div>
+      </div>
+
+      <!-- QUOTE -->
+      <div class="quote-card card card-quote">
+        <div class="card-title" style="margin-bottom:18px;"><div class="dot-ind blue"></div>Fuel for Focus</div>
+        <div class="quote-text" id="quoteText">The successful warrior is the average man with laser-like focus.</div>
+        <div class="quote-author" id="quoteAuthor">— Bruce Lee</div>
+        <button class="next-quote" onclick="nextQuote()">↻ Next</button>
+      </div>
+
+      <!-- MOOD -->
+      <div class="card card-mood">
+        <div class="card-title"><div class="dot-ind amber"></div>Current Energy</div>
+        <div class="mood-grid">
+          <button class="mood-btn" onclick="selectMood(this,'Wired 🔥')">🔥</button>
+          <button class="mood-btn" onclick="selectMood(this,'Calm 🌊')">🌊</button>
+          <button class="mood-btn" onclick="selectMood(this,'Tired 😴')">😴</button>
+          <button class="mood-btn" onclick="selectMood(this,'Anxious 😬')">😬</button>
+          <button class="mood-btn" onclick="selectMood(this,'Bored 😐')">😐</button>
+          <button class="mood-btn" onclick="selectMood(this,'Sharp 💡')">💡</button>
+          <button class="mood-btn" onclick="selectMood(this,'Stressed 🌀')">🌀</button>
+          <button class="mood-btn" onclick="selectMood(this,'Happy 😊')">😊</button>
+        </div>
+        <div class="mood-label" id="moodLabel">How are you feeling right now?</div>
+      </div>
+
+      <!-- DISTRACTION LOG (spans 2) -->
+      <div class="card card-distraction" style="grid-column:span 2;">
+        <div class="card-title"><div class="dot-ind red"></div>Distraction Triggers</div>
+        <div class="distraction-list" id="distractionList">
+          <div class="dis-empty-msg">No urges logged yet. Stay locked in 🎯</div>
+        </div>
+        <div class="dis-btn">
+          <button class="dis-tag" onclick="logDis('Instagram')">📱 Instagram</button>
+          <button class="dis-tag" onclick="logDis('YouTube')">▶ YouTube</button>
+          <button class="dis-tag" onclick="logDis('Twitter/X')">𝕏 Twitter</button>
+          <button class="dis-tag" onclick="logDis('WhatsApp')">💬 WhatsApp</button>
+          <button class="dis-tag" onclick="logDis('Random thoughts')">💭 Thoughts</button>
+        </div>
+      </div>
+
+      <!-- INTENTION -->
+      <div class="card card-intention">
+        <div class="card-title"><div class="dot-ind teal-pip"></div>Daily Intention</div>
+        <textarea class="int-area" id="intentionArea" placeholder="What matters most today? Write it here and return to it..." oninput="saveIntention()"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-text">© Focus Space — Your deep work companion</div>
+    <div class="footer-links">
+      <button class="reset-btn" onclick="resetDay()">⟳ Reset Day</button>
+      <button class="export-btn" onclick="exportStats()">Export Stats</button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+let timerInterval=null, totalSeconds=25*60, remainingSeconds=25*60;
+let isRunning=false, currentMode='focus', completedSessions=0, focusMinutes=0, distractionCount=0;
+let distractionLog={}, goals=[], breatheInterval=null, isBreathing=false;
+let quoteIndex=0, affIndex=0;
+
+const QUOTES=[
+  {t:"The successful warrior is the average man with laser-like focus.",a:"Bruce Lee"},
+  {t:"Concentrate all your thoughts upon the work at hand. The sun's rays do not burn until brought to a focus.",a:"Alexander Graham Bell"},
+  {t:"It is not that I'm so smart. It's just that I stay with problems longer.",a:"Albert Einstein"},
+  {t:"You can do anything, but not everything.",a:"David Allen"},
+  {t:"The art of being wise is knowing what to overlook.",a:"William James"},
+  {t:"One hour of concentrated effort is worth more than four hours of distracted work.",a:"Cal Newport"},
+  {t:"Your attention is the rarest and purest form of generosity.",a:"Simone Weil"},
+  {t:"Where focus goes, energy flows.",a:"Tony Robbins"},
+  {t:"Don't count the days. Make the days count.",a:"Muhammad Ali"},
+  {t:"The secret of getting ahead is getting started.",a:"Mark Twain"},
+];
+
+const AFFS=[
+  "You chose presence over performance. That's rare.",
+  "Every focused minute compounds into something great.",
+  "The feed will always be there. This moment won't.",
+  "Boredom is a sign your brain wants to create, not consume.",
+  "The urge passes. Your work stays.",
+  "You're building the version of yourself you'll thank later.",
+  "Attention is your most valuable resource. Spend it wisely.",
+  "One deep work session is worth a hundred shallow scrolls.",
+];
+
+// ── CLOCK ──────────────────────────────────────────────────
+function updateClock(){
+  const n=new Date();
+  let h=n.getHours(), m=n.getMinutes(), s=n.getSeconds();
+  const ap=h>=12?'PM':'AM'; h=h%12||12;
+  const el=document.getElementById('liveTime');
+  if(el) el.textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')} ${ap}`;
+  const gs=['Good night','Good morning','Good afternoon','Good evening'];
+  const gi=n.getHours()<5?0:n.getHours()<12?1:n.getHours()<17?2:n.getHours()<21?3:0;
+  const gel=document.getElementById('greetingText');
+  if(gel) gel.textContent=gs[gi];
+}
+// Start clock immediately — wrapped in try/catch so nothing can kill it
+(function startClock(){
+  try { updateClock(); } catch(e){}
+  setInterval(function(){ try{ updateClock(); }catch(e){} }, 1000);
+})();
+
+// ── NOTIFICATIONS ──────────────────────────────────────────
+function sendNotif(title,body){
+  if('Notification'in window&&Notification.permission==='granted') new Notification(title,{body});
+}
+// Request permission on first interaction
+document.addEventListener('click',function once(){Notification.requestPermission();document.removeEventListener('click',once);},{once:true});
+
+// ── TIMER ──────────────────────────────────────────────────
+function setMode(btn,mins,mode){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); currentMode=mode;
+  totalSeconds=mins*60; remainingSeconds=totalSeconds; isRunning=false;
+  clearInterval(timerInterval); timerInterval=null;
+  document.getElementById('startBtn').textContent='START';
+  document.getElementById('startBtn').classList.remove('running');
+  document.getElementById('timerDisplay').className='timer-display';
+  updateTimerDisplay(); updateRing(0);
+}
+
+function updateTimerDisplay(){
+  const m=Math.floor(remainingSeconds/60),s=remainingSeconds%60;
+  document.getElementById('timerDisplay').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const pct=Math.round((1-remainingSeconds/totalSeconds)*100);
+  document.getElementById('progressPct').textContent=pct+'%';
+  document.getElementById('progressBar').style.width=pct+'%';
+  updateRing(1-remainingSeconds/totalSeconds);
+}
+
+function updateRing(progress){
+  document.getElementById('ringFill').style.strokeDashoffset=163.4*(1-progress);
+  document.getElementById('ringFill').style.stroke=currentMode==='break'?'var(--blue)':'var(--accent)';
+}
+
+function toggleTimer(){
+  if(isRunning){
+    clearInterval(timerInterval);timerInterval=null;isRunning=false;
+    document.getElementById('startBtn').textContent='RESUME';
+    document.getElementById('startBtn').classList.remove('running');
+    document.getElementById('timerDisplay').className='timer-display';
+  } else {
+    isRunning=true;
+    document.getElementById('startBtn').textContent='PAUSE';
+    document.getElementById('startBtn').classList.add('running');
+    document.getElementById('timerDisplay').className='timer-display '+(currentMode==='break'?'break-time':'running');
+    timerInterval=setInterval(()=>{
+      if(remainingSeconds<=0){clearInterval(timerInterval);timerInterval=null;isRunning=false;sessionComplete();return;}
+      remainingSeconds--;
+      if(currentMode==='focus')focusMinutes++;
+      updateTimerDisplay();saveState();
+    },1000);
+  }
+}
+
+function resetTimer(){
+  clearInterval(timerInterval);timerInterval=null;isRunning=false;remainingSeconds=totalSeconds;
+  document.getElementById('startBtn').textContent='START';
+  document.getElementById('startBtn').classList.remove('running');
+  document.getElementById('timerDisplay').className='timer-display';
+  updateTimerDisplay();
+}
+
+function beep(freq,vol){
+  try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(vol,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1.4);o.start();o.stop(c.currentTime+1.4);}catch(e){}
+}
+
+function sessionComplete(){
+  document.getElementById('startBtn').textContent='START';
+  document.getElementById('startBtn').classList.remove('running');
+  document.getElementById('timerDisplay').className='timer-display';
+  if(currentMode==='focus'){
+    completedSessions++;updateDots();saveState();
+    showOverlay('focus');
+    sendNotif('🎯 Session Complete!',`You finished ${totalSeconds/60} minutes of deep work. Take a break!`);
+    beep(880,0.25);
+  } else {
+    showOverlay('break');
+    sendNotif('⚡ Break Over!','Ready to go back to deep work?');
+    beep(440,0.2);
+  }
+  updateStatsDisplay();
+}
+
+function showOverlay(type){
+  const f=type==='focus';
+  document.getElementById('popIcon').textContent=f?'🎯':'☕';
+  document.getElementById('popTitle').textContent=f?'Session Complete!':'Break Over!';
+  document.getElementById('popTitle').className='pop-title'+(f?'':' blue');
+  document.getElementById('popSub').textContent=f?`You crushed ${totalSeconds/60} minutes of deep work`:'Time to get back to deep work';
+  document.getElementById('popStat').textContent=f?`Session #${completedSessions}`:`${completedSessions} sessions done`;
+  document.getElementById('popStat').className='pop-stat'+(f?'':' blue');
+  document.getElementById('popClose').className='pop-close'+(f?'':' blue');
+  document.getElementById('popClose').textContent=f?'Take a break →':'Back to focus →';
+  document.getElementById('sessionOverlay').classList.add('show');
+}
+function closeOverlay(){document.getElementById('sessionOverlay').classList.remove('show');}
+
+function updateDots(){
+  for(let i=1;i<=4;i++) document.getElementById('d'+i).classList.toggle('done',i<=completedSessions%4||(completedSessions%4===0&&completedSessions>0));
+}
+
+// ── DISTRACTIONS ──────────────────────────────────────────
+function logDistraction(){distractionCount++;updateStatsDisplay();toast('⚡ Distraction noted. Back to work!');saveState();}
+function logDis(name){distractionLog[name]=(distractionLog[name]||0)+1;distractionCount++;updateStatsDisplay();renderDistractions();saveState();toast('Logged: '+name+' — stay focused 🎯');}
+function renderDistractions(){
+  const el=document.getElementById('distractionList');
+  const e=Object.entries(distractionLog).sort((a,b)=>b[1]-a[1]);
+  if(!e.length){el.innerHTML='<div class="dis-empty-msg">No urges logged yet. Stay locked in 🎯</div>';return;}
+  el.innerHTML=e.map(([n,c])=>`<div class="distraction-item"><span class="dis-name">${n}</span><span class="dis-count">${c}×</span></div>`).join('');
+}
+
+// ── GOALS ─────────────────────────────────────────────────
+function renderGoals(){
+  const el=document.getElementById('goalList');
+  const done=goals.filter(g=>g.done).length;
+  document.getElementById('goalsProg').textContent=`${done}/${goals.length}`;
+  if(!goals.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0 10px;line-height:1.7;font-family:\'DM Mono\',monospace;">Add your first goal for today.</div>';return;}
+  el.innerHTML=goals.map(g=>`<div class="goal-item${g.done?' done':''}" onclick="toggleGoal(${g.id})"><div class="goal-check">${g.done?'✓':''}</div><div class="goal-text">${g.text}</div></div>`).join('');
+}
+function showGoalInput(){document.getElementById('goalInputWrap').classList.add('show');document.getElementById('goalInput').focus();}
+function addGoal(){const v=document.getElementById('goalInput').value.trim();if(!v)return;goals.push({text:v,done:false,id:Date.now()});document.getElementById('goalInput').value='';document.getElementById('goalInputWrap').classList.remove('show');renderGoals();saveState();}
+function toggleGoal(id){goals=goals.map(g=>g.id===id?{...g,done:!g.done}:g);renderGoals();saveState();}
+
+// ── QUOTE ─────────────────────────────────────────────────
+function nextQuote(){
+  quoteIndex=(quoteIndex+1)%QUOTES.length;
+  document.getElementById('quoteText').textContent=QUOTES[quoteIndex].t;
+  document.getElementById('quoteAuthor').textContent='— '+QUOTES[quoteIndex].a;
+}
+
+// ── AFFIRMATION ───────────────────────────────────────────
+function nextAffirmation(){
+  affIndex=(affIndex+1)%AFFS.length;
+  document.getElementById('affirmationText').textContent=AFFS[affIndex];
+}
+
+// ── MOOD ──────────────────────────────────────────────────
+function selectMood(btn,label){
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('moodLabel').textContent=label+' — noted.';
+}
+
+// ── BREATHE ───────────────────────────────────────────────
+// CSS animation is exactly 12s: 4s inhale, 2s hold, 4s exhale, 2s hold
+// JS just drives the label text in sync with those durations
+const PHASES=[
+  {t:'inhale...', d:4000},
+  {t:'hold.',     d:2000},
+  {t:'exhale...', d:4000},
+  {t:'hold.',     d:2000},
+];
+let bPhase=0;
+
+function toggleBreathe(){
+  isBreathing=!isBreathing;
+  const ring=document.getElementById('breatheBtn');
+  const lbl=document.getElementById('breatheLabel');
+  if(isBreathing){
+    bPhase=0;
+    ring.classList.add('breathing');
+    setLabelText(lbl, PHASES[0].t);
+    // schedule remaining phases starting from phase 1
+    schedulePhase(1, PHASES[0].d);
+  } else {
+    ring.classList.remove('breathing');
+    clearTimeout(breatheInterval);
+    setLabelText(lbl, 'breathe');
+  }
+}
+
+function schedulePhase(idx, delay){
+  breatheInterval=setTimeout(()=>{
+    if(!isBreathing) return;
+    bPhase=idx%4;
+    const lbl=document.getElementById('breatheLabel');
+    setLabelText(lbl, PHASES[bPhase].t);
+    schedulePhase(bPhase+1, PHASES[bPhase].d);
+  }, delay);
+}
+
+function setLabelText(lbl, text){
+  lbl.classList.add('fade-out');
+  setTimeout(()=>{
+    lbl.textContent=text;
+    lbl.classList.remove('fade-out');
+  },420);
+}
+
+// ── STATS ─────────────────────────────────────────────────
+function updateStatsDisplay(){
+  document.getElementById('focusMinStat').textContent=focusMinutes;
+  document.getElementById('sessionsStat').textContent=completedSessions;
+  document.getElementById('distractionsStat').textContent=distractionCount;
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+let tTimeout;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(tTimeout);tTimeout=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── PERSIST ───────────────────────────────────────────────
+function saveState(){try{localStorage.setItem('fs_v3',JSON.stringify({goals,focusMinutes,completedSessions,distractionCount,distractionLog}));}catch(e){}}
+function saveIntention(){try{localStorage.setItem('fs_int',document.getElementById('intentionArea').value);}catch(e){}}
+function loadState(){
+  try{
+    const s=localStorage.getItem('fs_v3');
+    if(s){const d=JSON.parse(s);goals=d.goals||[];focusMinutes=d.focusMinutes||0;completedSessions=d.completedSessions||0;distractionCount=d.distractionCount||0;distractionLog=d.distractionLog||{};}
+    const it=localStorage.getItem('fs_int');if(it)document.getElementById('intentionArea').value=it;
+  }catch(e){}
+  renderGoals();renderDistractions();updateStatsDisplay();updateDots();
+}
+
+function resetDay(){
+  if(!confirm('Reset all stats for a fresh start?'))return;
+  goals=[];focusMinutes=0;completedSessions=0;distractionCount=0;distractionLog={};
+  renderGoals();renderDistractions();updateStatsDisplay();updateDots();resetTimer();saveState();
+  toast('🌅 Fresh start. You got this.');
+}
+function exportStats(){
+  const r=`FOCUS REPORT\n${'═'.repeat(26)}\nFocus Minutes : ${focusMinutes}\nSessions Done : ${completedSessions}\nUrges Logged  : ${distractionCount}\n\nTriggers:\n${Object.entries(distractionLog).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`  ${k}: ${v}×`).join('\n')||'  None'}\n\nGoals:\n${goals.map(g=>`  [${g.done?'✓':' '}] ${g.text}`).join('\n')||'  None set'}`;
+  const a=document.createElement('a');a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(r);a.download='focus-report.txt';a.click();
+}
+
+updateTimerDisplay();
+loadState();
+</script>
+</body>
+</html>
